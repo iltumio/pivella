@@ -331,11 +331,10 @@ export class IndexedDBManager {
     try {
       return await this.openDatabase();
     } catch (error: any) {
-      // If blocked or stuck, try to delete and recreate
+      // A blocked upgrade must never delete existing data.
       if (error.name === 'TimeoutError' || error.name === 'BlockedError') {
-        console.warn('[DB] Database blocked, attempting to delete and recreate...');
-        await this.deleteDatabase();
-        return await this.openDatabase();
+        console.warn('[DB] Database blocked; preserving existing data.');
+        throw new Error('Database occupato: chiudi le altre schede di Pivella e riprova. I dati sono conservati.');
       }
       throw error;
     }
@@ -362,33 +361,6 @@ export class IndexedDBManager {
         clearTimeout(timeout);
         console.log('[DB] No existing connection to close');
         resolve();
-      };
-    });
-  }
-
-  private deleteDatabase(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      console.log('[DB] Deleting database...');
-      const request = this.factory.deleteDatabase(DB_NAME);
-
-      const timeout = setTimeout(() => {
-        console.warn('[DB] Delete timeout, continuing anyway...');
-        resolve();
-      }, 3000);
-
-      request.onsuccess = () => {
-        clearTimeout(timeout);
-        console.log('[DB] Database deleted');
-        resolve();
-      };
-      request.onerror = () => {
-        clearTimeout(timeout);
-        console.error('[DB] Error deleting database:', request.error);
-        reject(request.error);
-      };
-      request.onblocked = () => {
-        console.warn('[DB] Delete blocked, waiting...');
-        // Don't resolve yet, wait for success or timeout
       };
     });
   }
@@ -447,6 +419,9 @@ export class IndexedDBManager {
         }
         if (!db.objectStoreNames.contains('users')) {
           db.createObjectStore('users', { keyPath: 'id' });
+        }
+        for (const store of STORES) {
+          if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: 'id' });
         }
         console.log('[DB] Upgrade complete');
       };

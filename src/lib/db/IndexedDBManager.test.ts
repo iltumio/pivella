@@ -24,7 +24,7 @@ function manager(now = NOW) {
 
 const cliente = (id: string, nome: string, extra: Record<string, unknown> = {}) => ({ id, userId: 'u1', nome, ...extra });
 
-test('init opens ForfettarioDB version 3 and PivellaSyncMeta, and exposes a writer id', async () => {
+test('init opens ForfettarioDB version 4 and PivellaSyncMeta, and exposes a writer id', async () => {
   const { factory, db } = manager();
   await db.init();
   assert.equal(db.db?.name, DB_NAME);
@@ -207,7 +207,7 @@ test('exportSnapshot builds the local v2 snapshot from every store plus the loca
   meta.close();
 
   const snapshot = await db.exportSnapshot();
-  assert.equal(snapshot.schemaVersion, 3);
+  assert.equal(snapshot.schemaVersion, 4);
   assert.equal(snapshot.updatedAt, NOW);
   assert.deepEqual(snapshot.writer, { id: db.writerId, kind: 'app' });
   assert.deepEqual(snapshot.clienti.map((c) => c.id), ['c1']);
